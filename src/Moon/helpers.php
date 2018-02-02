@@ -83,6 +83,17 @@ if (!function_exists('storage_path')) {
     }
 }
 
+if (!function_exists('runtime_path')) {
+    /**
+     * @param string $path
+     * @return string
+     */
+    function runtime_path($path = '')
+    {
+        return \Moon::$app->getRootPath() . DIRECTORY_SEPARATOR . 'runtime' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+    }
+}
+
 if (!function_exists('public_path')) {
     /**
      * @param string $path
@@ -91,17 +102,6 @@ if (!function_exists('public_path')) {
     function public_path($path = '')
     {
         return \Moon::$app->getRootPath() . DIRECTORY_SEPARATOR . 'public' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
-    }
-}
-
-if (!function_exists('config')) {
-    /**
-     * @param $key
-     * @return mixed|null
-     */
-    function config($key)
-    {
-        return \Moon\Config::get($key);
     }
 }
 
@@ -116,7 +116,7 @@ if (!function_exists('asset')) {
         /**
          * @var \Symfony\Component\HttpFoundation\Request $request
          */
-        $request = \Moon::$app->getRequest();
+        $request = \Moon::$app->get('request');
         if ($full) {
             return $request->getSchemeAndHttpHost() . $request->getBasePath() . '/' . $path;
         }
@@ -142,7 +142,7 @@ if (!function_exists('request')) {
      */
     function request($key = null, $default = null)
     {
-        $request = \Moon::$app->getRequest();
+        $request = \Moon::$app->get('request');
         if(is_null($key)){
             return $request;
         }

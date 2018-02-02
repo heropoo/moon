@@ -4,7 +4,9 @@ namespace Moon;
 
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Moon\Config\Config;
 use Moon\Routing\Router;
+use Moon\Container\Container;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,7 +24,7 @@ use Whoops\Run;
  * Class Application
  * @package Moon
  */
-class Application
+class Application extends Container
 {
     protected $rootPath;
     protected $configPath;
@@ -34,18 +36,6 @@ class Application
     protected $debug = false;
     protected $charset = 'UTF-8';
     protected $timezone = 'UTC';
-
-    protected $plugins = [];
-
-    /**
-     * @var Router
-     */
-    protected $router;
-
-    /**
-     * @var Request
-     */
-    protected $request;
 
     public function __construct($rootPath, $configPath = null, $appPath = null)
     {
@@ -75,7 +65,7 @@ class Application
 
         $this->init();
 
-        $this->request = Request::createFromGlobals();
+        $this->add('request', Request::createFromGlobals());
 
         require_once __DIR__ . '/helpers.php';
 
@@ -85,9 +75,10 @@ class Application
     protected function handleError()
     {
         $logger = new Logger('app');
+        $this->add('logger', $logger);
         $whoops = new Run();
         if ($this->debug) {
-            if ($this->request->isXmlHttpRequest()) {
+            if ($this->get('request')->isXmlHttpRequest()) {
                 $whoops->pushHandler(new JsonResponseHandler());
             } else {
                 $handler = new PrettyPageHandler();
@@ -114,14 +105,6 @@ class Application
         if (!empty($this->config['charset'])) {
             $this->charset = $this->config['charset'];
         }
-
-        if (isset($this->config['session']['auto_start']) && $this->config['session']['auto_start'] == false) {
-        } else {
-            if (!empty($this->config['session']['name'])) {
-                session_name($this->config['session']['name']);
-            }
-            session_start();
-        }
     }
 
     public function enableDebug()
@@ -130,20 +113,17 @@ class Application
         return $this;
     }
 
-    /**
-     * @param array $plugins
-     * @return $this
-     */
-    public function bootstrap(array $plugins)
+    /*public function bootstrap($plugins)
     {
-        $this->plugins = $plugins;
+        $this->plugins = (array)$plugins;
         return $this;
-    }
+    }*/
 
     protected function bootstrapPlugins()
     {
-        foreach ($this->plugins as $plugin) {
-            include_once $this->rootPath . DIRECTORY_SEPARATOR . 'bootstrap' . DIRECTORY_SEPARATOR . $plugin . '.php';
+        $plugins = isset($this->config['bootstrap']) ? $this->config['bootstrap'] : [];
+        foreach ($plugins as $plugin) {
+            include $this->rootPath . DIRECTORY_SEPARATOR . 'bootstrap' . DIRECTORY_SEPARATOR . $plugin . '.php';
         }
         return $this;
     }
@@ -152,23 +132,18 @@ class Application
     {
         $this->handleError();
 
-        $defaultPlugins = $this->config['bootstrap'];
-        $this->plugins = array_merge($this->plugins, $defaultPlugins);
-        $this->plugins = array_unique($this->plugins);
-        $this->bootstrapPlugins();
-
-        $this->router = new Router(null, [
+        $router = new Router(null, [
             'namespace' => 'App\\Controllers',
-            //'middleware'=>['sessionStart'],
-            //'prefix'=>''
         ]);
+
+        $this->add('router', $router);
 
         require $this->rootPath . '/routes/web.php';
 
-        $routes = $this->router->getRoutes();
+        $routes = $router->getRoutes();
 
         try {
-            $response = $this->resolveRequest($this->request, $routes);
+            $response = $this->resolveRequest($this->get('request'), $routes);
         } catch (ResourceNotFoundException $e) {
             $response = $this->makeResponse($e->getMessage(), 404);
         } catch (MethodNotAllowedException $e) {
@@ -212,11 +187,43 @@ class Application
     }
 
     /**
+     * @param Request $request
+     * @param array $middlewareList
+     * @return mixed
+     * @throws Exception
+     */
+    protected function filterMiddleware($request, $middlewareList)
+    {
+        if (empty($middlewareList)) {
+            return null;
+        }
+        $middleware = array_shift($middlewareList);
+        if (!class_exists($middleware)) {
+            throw new Exception('Class ' . $middleware . ' is not exists!');
+        }
+        $middlewareObj = new $middleware();
+        return $middlewareObj->handle($request, function ($request) use ($middlewareList) {
+            return $this->filterMiddleware($request, $middlewareList);
+        });
+    }
+
+    /**
      * @param array $matchResult
      * @return JsonResponse|Response
      */
     protected function resolveController($matchResult)
     {
+        $routeName = $matchResult['_route'];
+        $router = $this->get('router');
+        $route = $router->getRoute($routeName);
+        $middlewareList = $route->getMiddleware();
+        $request = $this->get('request');
+        $result = $this->filterMiddleware($request, $middlewareList);
+
+        if (!is_null($result)) {
+            return $this->makeResponse($result);
+        }
+
         /**
          * resolve controller
          */
@@ -224,7 +231,7 @@ class Application
         unset($matchResult['_controller']);
         unset($matchResult['_route']);
         if ($action instanceof \Closure) {
-            $data = call_user_func($action, $this->router);
+            $data = call_user_func($action, $router);
             return $this->makeResponse($data);
         } else {
             $actionArr = explode('::', $action);
@@ -246,12 +253,6 @@ class Application
 
             return $this->makeResponse($data);
         }
-    }
-
-    public function setDebug(bool $debug)
-    {
-        $this->debug = $debug;
-        return $this;
     }
 
     public function __call($name, $arguments)
