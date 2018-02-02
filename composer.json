@@ -13,8 +13,8 @@
     "require": {
         "php": ">=5.4",
         "heropoo/routing": "*",
-        "heropoo/config": "dev-master",
-        "heropoo/db": "dev-master",
+        "heropoo/config": "*",
+        "heropoo/db": "*",
         "monolog/monolog": "^1.0",
         "filp/whoops": "^2.1"
     },
