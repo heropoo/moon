@@ -126,11 +126,16 @@ if (!function_exists('asset')) {
 
 if (!function_exists('app')) {
     /**
+     * @param string $key
      * @return \Moon\Application
      */
-    function app()
+    function app($key = null)
     {
-        return \Moon::$app;
+        $app = \Moon::$app;
+        if (is_null($key)) {
+            return $app;
+        }
+        return $app->get($key);
     }
 }
 
@@ -143,10 +148,42 @@ if (!function_exists('request')) {
     function request($key = null, $default = null)
     {
         $request = \Moon::$app->get('request');
-        if(is_null($key)){
+        if (is_null($key)) {
             return $request;
         }
         $value = $request->get($key);
         return is_null($value) || strlen($value) == 0 ? $default : $value;
     }
 }
+
+if (!function_exists('url')) {
+    /**
+     * @param string $path
+     * @return string
+     */
+    function url($path)
+    {
+        if (strpos($path, 'http://') === 0 || strrpos($path, 'https://') === 0) {
+            return $path;
+        }
+        /**
+         * @var \Symfony\Component\HttpFoundation\Request $request
+         */
+        $request = \Moon::$app->get('request');
+        return $request->getSchemeAndHttpHost() . $request->getBasePath() . '/' . $path;
+    }
+}
+
+if (!function_exists('redirect')) {
+    /**
+     * @param string $to
+     * @param int $status
+     * @return string
+     */
+    function redirect($to, $status = 302)
+    {
+        $url = url($to);
+        return new \Symfony\Component\HttpFoundation\RedirectResponse($url, $status);
+    }
+}
+
