@@ -67,7 +67,7 @@ class Application extends Container
 
         $this->add('request', Request::createFromGlobals());
 
-        require_once __DIR__ . '/helpers.php';
+        require_once dirname(__DIR__) . '/helpers.php';
 
         \Moon::$app = $this;
     }
@@ -224,34 +224,40 @@ class Application extends Container
             return $this->makeResponse($result);
         }
 
-        /**
-         * resolve controller
-         */
-        $action = $matchResult['_controller'];
-        unset($matchResult['_controller']);
-        unset($matchResult['_route']);
-        if ($action instanceof \Closure) {
-            $data = call_user_func($action, $router);
-            return $this->makeResponse($data);
-        } else {
-            $actionArr = explode('::', $action);
-            $controllerName = $actionArr[0];
-            if (!class_exists($controllerName)) {
-                return $this->makeResponse("Controller class '$controllerName' is not exists!", 404);
-            }
-            $controller = new $controllerName;
-            $methodName = $actionArr[1];
-            if (!method_exists($controller, $methodName)) {
-                return $this->makeResponse("Controller method '$controllerName::$methodName' is not defined!", 404);
-            }
-
-            if (empty($matchResult)) {
-                $data = call_user_func([$controller, $methodName]);
+        try{
+            /**
+             * resolve controller
+             */
+            $action = $matchResult['_controller'];
+            unset($matchResult['_controller']);
+            unset($matchResult['_route']);
+            if ($action instanceof \Closure) {
+                $data = call_user_func($action, $router);
+                return $this->makeResponse($data);
             } else {
-                $data = call_user_func_array([$controller, $methodName], $matchResult);
-            }
+                $actionArr = explode('::', $action);
+                $controllerName = $actionArr[0];
+                if (!class_exists($controllerName)) {
+                    return $this->makeResponse("Controller class '$controllerName' is not exists!", 404);
+                }
+                $controller = new $controllerName;
+                $methodName = $actionArr[1];
+                if (!method_exists($controller, $methodName)) {
+                    return $this->makeResponse("Controller method '$controllerName::$methodName' is not defined!", 404);
+                }
 
-            return $this->makeResponse($data);
+                if (empty($matchResult)) {
+                    $data = call_user_func([$controller, $methodName]);
+                } else {
+                    $data = call_user_func_array([$controller, $methodName], $matchResult);
+                }
+
+                return $this->makeResponse($data);
+            }
+        }catch (ResourceNotFoundException $e){
+            return $this->makeResponse($e->getMessage(), 404);
+        }catch (\HttpException $e){
+            return $this->makeResponse($e->getMessage(), $e->getCode());
         }
     }
 

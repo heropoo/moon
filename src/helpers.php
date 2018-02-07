@@ -187,3 +187,19 @@ if (!function_exists('redirect')) {
     }
 }
 
+if (!function_exists('abort')) {
+    /**
+     * @param int $code
+     * @param string $message
+     * @return string
+     * @throws \Symfony\Component\Routing\Exception\ResourceNotFoundException|HttpException
+     */
+    function abort($code = 404, $message = '')
+    {
+        if ($code == 404) {
+            throw new \Symfony\Component\Routing\Exception\ResourceNotFoundException($message);
+        }
+        throw new HttpException($code, $message);
+    }
+}
+
