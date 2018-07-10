@@ -16,7 +16,8 @@
         "heropoo/config": "*",
         "heropoo/db": "*",
         "monolog/monolog": "^1.0",
-        "filp/whoops": "^2.1"
+        "filp/whoops": "^2.1",
+        "vlucas/phpdotenv": "^2.5"
     },
     "autoload":{
         "psr-4":{

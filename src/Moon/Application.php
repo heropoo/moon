@@ -2,6 +2,7 @@
 
 namespace Moon;
 
+use Dotenv\Dotenv;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Moon\Config\Config;
@@ -67,6 +68,7 @@ class Application extends Container
 
         $this->add('request', Request::createFromGlobals());
 
+        (new Dotenv($this->rootPath))->load();
         require_once dirname(__DIR__) . '/helpers.php';
 
         \Moon::$app = $this;
