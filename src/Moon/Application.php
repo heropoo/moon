@@ -125,17 +125,25 @@ class Application extends Container
         return $this;
     }*/
 
-    protected function bootstrapPlugins()
+    protected function bootstrap()
     {
-        $plugins = isset($this->config['bootstrap']) ? $this->config['bootstrap'] : [];
-        foreach ($plugins as $plugin) {
-            include $this->rootPath . DIRECTORY_SEPARATOR . 'bootstrap' . DIRECTORY_SEPARATOR . $plugin . '.php';
+        $components = isset($this->config['bootstrap']) ? $this->config['bootstrap'] : [];
+
+        isset($this->config['components']) ? : $this->config['components'] = [];
+
+        foreach ($components as $componentName) {
+            if(!key_exists($componentName, $this->config['components'])){
+                throw new Exception("Components '$componentName' is not found in configuration file");
+            }
+            $this->makeComponent($componentName, $this->config['components'][$componentName]);
         }
         return $this;
     }
 
     public function run()
     {
+        $this->bootstrap();
+
         $this->handleError();
 
         $router = new Router(null, [
