@@ -38,9 +38,9 @@ class Container
             if (!class_exists($this->binds[$key])) {
                 throw new Exception('Class ' . $this->binds[$key] . ' is not exists!');
             }
-            $obj = new $this->binds[$key];  // todo DependencyInjection
-            return $obj;
+            $this->instances[$key] = new $this->binds[$key];  // todo DependencyInjection
+            return $this->instances[$key];
         }
-        return null;
+        throw new Exception("Class or instance named '$key' is not found!");
     }
 }

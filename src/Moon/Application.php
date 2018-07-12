@@ -53,6 +53,9 @@ class Application extends Container
         }
         $this->configPath = realpath($configPath);
 
+        (new Dotenv($this->rootPath))->load();
+        require_once dirname(__DIR__) . '/helpers.php';
+
         Config::setConfigDir($this->configPath);
         $this->config = Config::get('app', true);
 
@@ -67,9 +70,6 @@ class Application extends Container
         $this->init();
 
         $this->add('request', Request::createFromGlobals());
-
-        (new Dotenv($this->rootPath))->load();
-        require_once dirname(__DIR__) . '/helpers.php';
 
         \Moon::$app = $this;
     }
@@ -107,13 +107,17 @@ class Application extends Container
         if (!empty($this->config['charset'])) {
             $this->charset = $this->config['charset'];
         }
+
+        if(!empty($this->config['debug'])){
+            $this->debug = $this->config['debug'];
+        }
     }
 
-    public function enableDebug()
-    {
-        $this->debug = true;
-        return $this;
-    }
+//    public function enableDebug()
+//    {
+//        $this->debug = true;
+//        return $this;
+//    }
 
     /*public function bootstrap($plugins)
     {
