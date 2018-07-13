@@ -20,4 +20,8 @@ class Moon
         $console = static::$app->get('console');
         $console->add($command, $action, $description);
     }
+
+    public static function version(){
+        return 'v0.3';
+    }
 }

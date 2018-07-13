@@ -181,7 +181,7 @@ class Application extends Container
         require $this->rootPath . '/routes/console.php';
 
         if(!isset($argv[1])){
-            echo 'Moon Console v0.2'.PHP_EOL;
+            echo 'Moon Console '.\Moon::version().PHP_EOL;
             //todo command list
             return 0;
         }
