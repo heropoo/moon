@@ -6,6 +6,7 @@ use Dotenv\Dotenv;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Moon\Config\Config;
+use Moon\Routing\Route;
 use Moon\Routing\Router;
 use Moon\Container\Container;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -69,8 +70,6 @@ class Application extends Container
 
         $this->init();
 
-        $this->add('request', Request::createFromGlobals());
-
         \Moon::$app = $this;
     }
 
@@ -80,13 +79,18 @@ class Application extends Container
         $this->add('logger', $logger);
         $whoops = new Run();
         if ($this->debug) {
-            if ($this->get('request')->isXmlHttpRequest()) {
-                $whoops->pushHandler(new JsonResponseHandler());
-            } else {
-                $handler = new PrettyPageHandler();
-                $handler->setPageTitle('Moon App');
-                $whoops->pushHandler($handler);
+            if(is_cli()){
+                $whoops->pushHandler(new PlainTextHandler());
+            }else{
+                if ($this->get('request')->isXmlHttpRequest()) {
+                    $whoops->pushHandler(new JsonResponseHandler());
+                } else {
+                    $handler = new PrettyPageHandler();
+                    $handler->setPageTitle('Moon App');
+                    $whoops->pushHandler($handler);
+                }
             }
+
         }
         $handler = new PlainTextHandler($logger);
         $handler->loggerOnly(true);
@@ -113,18 +117,6 @@ class Application extends Container
         }
     }
 
-//    public function enableDebug()
-//    {
-//        $this->debug = true;
-//        return $this;
-//    }
-
-    /*public function bootstrap($plugins)
-    {
-        $this->plugins = (array)$plugins;
-        return $this;
-    }*/
-
     protected function bootstrap()
     {
         $components = isset($this->config['bootstrap']) ? $this->config['bootstrap'] : [];
@@ -142,6 +134,8 @@ class Application extends Container
 
     public function run()
     {
+        $this->add('request', Request::createFromGlobals());
+
         $this->bootstrap();
 
         $this->handleError();
@@ -165,6 +159,34 @@ class Application extends Container
         }
 
         $response->send();
+    }
+
+    public function runConsole(){
+        $this->bootstrap();
+        $this->handleError();
+        $this->handCommand();
+    }
+
+    protected function handCommand(){
+        $argv = $_SERVER['argv'];
+        foreach ($argv as $key => $arg){
+            if((strpos($arg, 'moon') + 4) == strlen($arg) || $arg === 'moon'){
+                break;
+            }else{
+                unset($argv[$key]);
+            }
+        }
+        $console = new Console();
+        $this->add('console', $console);
+        require $this->rootPath . '/routes/console.php';
+
+        if(!isset($argv[1])){
+            echo 'Moon Console v0.2'.PHP_EOL;
+            //todo command list
+            return 0;
+        }
+
+        return $console->runCommand($argv[1]);
     }
 
     /**
@@ -228,6 +250,9 @@ class Application extends Container
     protected function resolveController($matchResult)
     {
         $routeName = $matchResult['_route'];
+        /**
+         * @var Router $router
+         */
         $router = $this->get('router');
         $route = $router->getRoute($routeName);
         $middlewareList = $route->getMiddleware();

@@ -12,4 +12,12 @@ class Moon
      * @var \Moon\Application $app
      */
     public static $app;
+
+    public static function command($command, $action, $description = ''){
+        /**
+         * @var \Moon\Console $console
+         */
+        $console = static::$app->get('console');
+        $console->add($command, $action, $description);
+    }
 }
