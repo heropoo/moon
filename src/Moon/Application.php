@@ -182,7 +182,12 @@ class Application extends Container
 
         if(!isset($argv[1])){
             echo 'Moon Console '.\Moon::version().PHP_EOL;
-            //todo command list
+            echo '------------------------------------------------'.PHP_EOL;
+            // command list
+            ksort($console->commands);
+            foreach ($console->commands as $command => $options){
+                echo $command."\t\t".$options['description'].PHP_EOL;
+            }
             return 0;
         }
 
