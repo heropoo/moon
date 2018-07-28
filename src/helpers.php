@@ -161,10 +161,13 @@ if (!function_exists('url')) {
      * @param string $path
      * @return string
      */
-    function url($path)
+    function url($path = '')
     {
         if (strpos($path, 'http://') === 0 || strrpos($path, 'https://') === 0) {
             return $path;
+        }
+        if($path == '/'){
+            $path = '';
         }
         /**
          * @var \Symfony\Component\HttpFoundation\Request $request
