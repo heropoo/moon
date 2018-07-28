@@ -6,7 +6,6 @@ use Dotenv\Dotenv;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Moon\Config\Config;
-use Moon\Routing\Route;
 use Moon\Routing\Router;
 use Moon\Container\Container;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -103,16 +102,16 @@ class Application extends Container
 
     protected function init()
     {
-        if (!empty($this->config['timezone'])) {
+        if (isset($this->config['timezone'])) {
             $this->timezone = $this->config['timezone'];
             date_default_timezone_set($this->timezone);
         }
 
-        if (!empty($this->config['charset'])) {
+        if (isset($this->config['charset'])) {
             $this->charset = $this->config['charset'];
         }
 
-        if(!empty($this->config['debug'])){
+        if(isset($this->config['debug'])){
             $this->debug = $this->config['debug'];
         }
     }
@@ -251,6 +250,7 @@ class Application extends Container
     /**
      * @param array $matchResult
      * @return JsonResponse|Response
+     * @throws Exception
      */
     protected function resolveController($matchResult)
     {
@@ -282,12 +282,12 @@ class Application extends Container
                 $actionArr = explode('::', $action);
                 $controllerName = $actionArr[0];
                 if (!class_exists($controllerName)) {
-                    return $this->makeResponse("Controller class '$controllerName' is not exists!", 404);
+                    throw new Exception("Controller class '$controllerName' is not exists!");
                 }
                 $controller = new $controllerName;
                 $methodName = $actionArr[1];
                 if (!method_exists($controller, $methodName)) {
-                    return $this->makeResponse("Controller method '$controllerName::$methodName' is not defined!", 404);
+                    throw new Exception("Controller method '$controllerName::$methodName' is not defined!");
                 }
 
                 if (empty($matchResult)) {
@@ -300,7 +300,7 @@ class Application extends Container
             }
         }catch (ResourceNotFoundException $e){
             return $this->makeResponse($e->getMessage(), 404);
-        }catch (\HttpException $e){
+        }catch (HttpException $e){
             return $this->makeResponse($e->getMessage(), $e->getCode());
         }
     }
