@@ -111,6 +111,10 @@ class Application extends Container
             $this->charset = $this->config['charset'];
         }
 
+        if(isset($this->config['environment'])){
+            $this->environment = $this->config['environment'];
+        }
+
         if(isset($this->config['debug'])){
             $this->debug = $this->config['debug'];
         }
@@ -189,8 +193,10 @@ class Application extends Container
             }
             return 0;
         }
+        $command = $argv[1];
+        unset($argv[0], $argv[1]);
 
-        return $console->runCommand($argv[1]);
+        return $console->runCommand($command, $argv);
     }
 
     /**

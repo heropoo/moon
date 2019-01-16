@@ -21,6 +21,10 @@ class Moon
         $console->add($command, $action, $description);
     }
 
+    public static function environment(){
+        return static::$app->getEnvironment();
+    }
+
     public static function version(){
         return 'v0.3';
     }

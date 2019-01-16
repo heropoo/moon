@@ -24,13 +24,13 @@ class Console
         ];
     }
 
-    public function runCommand($command){
+    public function runCommand($command, $params = []){
         if(!isset($this->commands[$command])){
             throw new Exception("Command '$command' is not defined");
         }
         $action = $this->commands[$command]['action'];
         if ($action instanceof \Closure) {
-            return call_user_func($action);
+            return call_user_func_array($action, $params);
         } else {
             $actionArr = explode('::', $action);
             $controllerName = $actionArr[0];
@@ -42,8 +42,7 @@ class Console
             if (!method_exists($controller, $methodName)) {
                 throw new Exception("Command class method '$controllerName::$methodName' is not defined!");
             }
-            return call_user_func([$controller, $methodName]);
-            //return call_user_func_array([$controller, $methodName], $params); //todo
+            return call_user_func_array([$controller, $methodName], $params);
         }
     }
 }
