@@ -168,7 +168,7 @@ class Application extends Container
     public function runConsole(){
         $this->bootstrap();
         $this->handleError();
-        $this->handCommand();
+        return $this->handCommand();
     }
 
     protected function handCommand(){
