@@ -56,8 +56,9 @@ class Application extends Container
         (new Dotenv($this->rootPath))->load();
         require_once dirname(__DIR__) . '/helpers.php';
 
-        Config::setConfigDir($this->configPath);
-        $this->config = Config::get('app', true);
+        $config = new Config($this->configPath);
+        $this->add('config', $config);
+        $this->config = $config->get('app', true);
 
         if (is_null($appPath)) {
             $appPath = $this->rootPath . '/app';

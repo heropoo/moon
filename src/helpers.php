@@ -234,3 +234,16 @@ if (! function_exists('env')) {
         return $value;
     }
 }
+
+if(!function_exists('config')){
+    /**
+     * get a config
+     * @param string $key
+     * @param bool $throw
+     * @return mixed|null|\Moon\Config\Exception
+     */
+    function config($key, $throw = false){
+        $config = \Moon::$app->get('config');
+        return $config->get($key, $throw);
+    }
+}
