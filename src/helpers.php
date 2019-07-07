@@ -45,7 +45,7 @@ if (!function_exists('dd')) {
      */
     function dd($var)
     {
-        dump($var);
+        call_user_func_array('dump', func_get_args());
         exit(1);
     }
 }
@@ -232,5 +232,18 @@ if (! function_exists('env')) {
         }
 
         return $value;
+    }
+}
+
+if(!function_exists('config')){
+    /**
+     * get a config
+     * @param string $key
+     * @param bool $throw
+     * @return mixed|null|\Moon\Config\Exception
+     */
+    function config($key, $throw = false){
+        $config = \Moon::$app->get('config');
+        return $config->get($key, $throw);
     }
 }

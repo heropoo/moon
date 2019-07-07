@@ -3,6 +3,8 @@
 namespace Moon;
 
 use Dotenv\Dotenv;
+use Dotenv\Exception\ExceptionInterface;
+use Dotenv\Exception\InvalidCallbackException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Moon\Config\Config;
@@ -53,12 +55,6 @@ class Application extends Container
         }
         $this->configPath = realpath($configPath);
 
-        (new Dotenv($this->rootPath))->load();
-        require_once dirname(__DIR__) . '/helpers.php';
-
-        Config::setConfigDir($this->configPath);
-        $this->config = Config::get('app', true);
-
         if (is_null($appPath)) {
             $appPath = $this->rootPath . '/app';
         }
@@ -67,9 +63,9 @@ class Application extends Container
         }
         $this->appPath = realpath($appPath);
 
-        $this->init();
-
         \Moon::$app = $this;
+
+        $this->init();
     }
 
     protected function handleError()
@@ -77,20 +73,21 @@ class Application extends Container
         $logger = new Logger('app');
         $this->add('logger', $logger);
         $whoops = new Run();
+
         if ($this->debug) {
-            if(is_cli()){
+            if (is_cli()) {
                 $whoops->pushHandler(new PlainTextHandler());
-            }else{
-                if ($this->get('request')->isXmlHttpRequest()) {
+            } else {
+                if (isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && strtolower($_SERVER["HTTP_X_REQUESTED_WITH"] == 'xmlhttprequest')) {
                     $whoops->pushHandler(new JsonResponseHandler());
                 } else {
                     $handler = new PrettyPageHandler();
-                    $handler->setPageTitle('Moon App');
+                    $handler->setPageTitle('Moon App Error');
                     $whoops->pushHandler($handler);
                 }
             }
-
         }
+
         $handler = new PlainTextHandler($logger);
         $handler->loggerOnly(true);
         $whoops->pushHandler($handler);
@@ -102,6 +99,19 @@ class Application extends Container
 
     protected function init()
     {
+        try {
+            (new Dotenv($this->rootPath))->load();
+        } catch (ExceptionInterface $e) {
+            trigger_error($e->getMessage(), E_USER_ERROR);
+        }
+
+        require_once dirname(__DIR__) . '/helpers.php';
+
+        $config = new Config($this->configPath);
+        $this->add('config', $config);
+
+        $this->config = $config->get('app', true);
+
         if (isset($this->config['timezone'])) {
             $this->timezone = $this->config['timezone'];
             date_default_timezone_set($this->timezone);
@@ -111,23 +121,25 @@ class Application extends Container
             $this->charset = $this->config['charset'];
         }
 
-        if(isset($this->config['environment'])){
+        if (isset($this->config['environment'])) {
             $this->environment = $this->config['environment'];
         }
 
-        if(isset($this->config['debug'])){
+        if (isset($this->config['debug'])) {
             $this->debug = $this->config['debug'];
         }
+
+        $this->handleError();
     }
 
     protected function bootstrap()
     {
         $components = isset($this->config['bootstrap']) ? $this->config['bootstrap'] : [];
 
-        isset($this->config['components']) ? : $this->config['components'] = [];
+        isset($this->config['components']) ?: $this->config['components'] = [];
 
         foreach ($components as $componentName) {
-            if(!key_exists($componentName, $this->config['components'])){
+            if (!key_exists($componentName, $this->config['components'])) {
                 throw new Exception("Components '$componentName' is not found in configuration file");
             }
             $this->makeComponent($componentName, $this->config['components'][$componentName]);
@@ -140,8 +152,6 @@ class Application extends Container
         $this->add('request', Request::createFromGlobals());
 
         $this->bootstrap();
-
-        $this->handleError();
 
         $router = new Router(null, [
             'namespace' => 'App\\Controllers',
@@ -164,18 +174,19 @@ class Application extends Container
         $response->send();
     }
 
-    public function runConsole(){
+    public function runConsole()
+    {
         $this->bootstrap();
-        $this->handleError();
         return $this->handCommand();
     }
 
-    protected function handCommand(){
+    protected function handCommand()
+    {
         $argv = $_SERVER['argv'];
-        foreach ($argv as $key => $arg){
-            if((strpos($arg, 'moon') + 4) == strlen($arg) || $arg === 'moon'){
+        foreach ($argv as $key => $arg) {
+            if ((strpos($arg, 'moon') + 4) == strlen($arg) || $arg === 'moon') {
                 break;
-            }else{
+            } else {
                 unset($argv[$key]);
             }
         }
@@ -183,13 +194,13 @@ class Application extends Container
         $this->add('console', $console);
         require $this->rootPath . '/routes/console.php';
 
-        if(!isset($argv[1])){
-            echo 'Moon Console '.\Moon::version().PHP_EOL;
-            echo '------------------------------------------------'.PHP_EOL;
+        if (!isset($argv[1])) {
+            echo 'Moon Console ' . \Moon::version() . PHP_EOL;
+            echo '------------------------------------------------' . PHP_EOL;
             // command list
             ksort($console->commands);
-            foreach ($console->commands as $command => $options){
-                echo $command."\t\t".$options['description'].PHP_EOL;
+            foreach ($console->commands as $command => $options) {
+                echo $command . "\t\t" . $options['description'] . PHP_EOL;
             }
             return 0;
         }
@@ -274,7 +285,7 @@ class Application extends Container
             return $this->makeResponse($result);
         }
 
-        try{
+        try {
             /**
              * resolve controller
              */
@@ -304,9 +315,9 @@ class Application extends Container
 
                 return $this->makeResponse($data);
             }
-        }catch (ResourceNotFoundException $e){
+        } catch (ResourceNotFoundException $e) {
             return $this->makeResponse($e->getMessage(), 404);
-        }catch (HttpException $e){
+        } catch (HttpException $e) {
             return $this->makeResponse($e->getMessage(), $e->getCode());
         }
     }
