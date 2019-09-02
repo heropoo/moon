@@ -72,9 +72,11 @@ class Application extends Container
     {
         $logger = new Logger('app');
         $this->add('logger', $logger);
+        $filename = $this->rootPath . '/runtime/logs/app-' . date('Y-m-d') . '.log';
+        $logger->pushHandler(new StreamHandler($filename, Logger::ERROR));
+
         $whoops = new Run();
 
-        
         if (is_cli()) {
             $whoops->pushHandler(new PlainTextHandler());
         } else {
@@ -93,9 +95,6 @@ class Application extends Container
         $handler->loggerOnly(true);
         $whoops->pushHandler($handler);
         $whoops->register();
-
-        $filename = $this->rootPath . '/runtime/logs/app-' . date('Y-m-d') . '.log';
-        $logger->pushHandler(new StreamHandler($filename, Logger::ERROR));
     }
 
     protected function init()
