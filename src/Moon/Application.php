@@ -74,10 +74,11 @@ class Application extends Container
         $this->add('logger', $logger);
         $whoops = new Run();
 
-        if ($this->debug) {
-            if (is_cli()) {
-                $whoops->pushHandler(new PlainTextHandler());
-            } else {
+        
+        if (is_cli()) {
+            $whoops->pushHandler(new PlainTextHandler());
+        } else {
+            if ($this->debug) {
                 if (isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && strtolower($_SERVER["HTTP_X_REQUESTED_WITH"] == 'xmlhttprequest')) {
                     $whoops->pushHandler(new JsonResponseHandler());
                 } else {
