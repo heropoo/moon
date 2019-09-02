@@ -27,9 +27,9 @@ class TwigView
     {
         $loader = new \Twig_Loader_Filesystem($this->viewPath);
         $twig = new \Twig_Environment($loader, array(
-            'cache' => App::$app->getRootPath().'/runtime/cache/twig',
-            'debug' => App::$app->getDebug(),
-            'charset' => App::$app->getCharset(),
+            'cache' => \Moon::$app->getRootPath().'/runtime/cache/twig',
+            'debug' => \Moon::$app->getDebug(),
+            'charset' => \Moon::$app->getCharset(),
         ));
         $view .= '.twig';
         return $twig->render($view, $data);
