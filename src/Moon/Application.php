@@ -4,20 +4,17 @@ namespace Moon;
 
 use Dotenv\Dotenv;
 use Dotenv\Exception\ExceptionInterface;
-use Dotenv\Exception\InvalidCallbackException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Moon\Config\Config;
 use Moon\Routing\Router;
+use Moon\Routing\Route;
 use Moon\Container\Container;
+use Moon\Routing\UrlMatchException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Exception\MethodNotAllowedException;
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-use Symfony\Component\Routing\Matcher\UrlMatcher;
-use Symfony\Component\Routing\RequestContext;
-use Symfony\Component\Routing\RouteCollection;
+use Moon\Routing\RouteCollection;
 use Whoops\Handler\JsonResponseHandler;
 use Whoops\Handler\PlainTextHandler;
 use Whoops\Handler\PrettyPageHandler;
@@ -165,11 +162,12 @@ class Application extends Container
 
         try {
             $response = $this->resolveRequest($this->get('request'), $routes);
-        } catch (ResourceNotFoundException $e) {
+        } catch (UrlMatchException $e) {
             $response = $this->makeResponse($e->getMessage(), 404);
-        } catch (MethodNotAllowedException $e) {
-            $response = $this->makeResponse('Method not allow', 405);
         }
+//        catch (MethodNotAllowedException $e) {
+//            $response = $this->makeResponse('Method not allow', 405);
+//        }
 
         $response->send();
     }
@@ -212,18 +210,12 @@ class Application extends Container
 
     /**
      * @param Request $request
-     * @param RouteCollection $routes
+     * @param Router $router
      * @return JsonResponse|Response
      */
-    protected function resolveRequest(Request $request, RouteCollection $routes)
+    protected function resolveRequest(Request $request, Router $router)
     {
-        $context = new RequestContext();
-        $context->fromRequest($request);
-
-        //match
-        $matcher = new UrlMatcher($routes, $context);
-        $matchResult = $matcher->match($request->getPathInfo());
-
+        $matchResult = $router->dispatch($request->getPathInfo(), $request->getMethod());
         return $this->resolveController($matchResult);
     }
 
@@ -271,12 +263,13 @@ class Application extends Container
      */
     protected function resolveController($matchResult)
     {
-        $routeName = $matchResult['_route'];
         /**
          * @var Router $router
          */
         $router = $this->get('router');
-        $route = $router->getRoute($routeName);
+        /** @var Route $route */
+        $route = $matchResult['route'];
+        $params = $matchResult['params'];
         $middlewareList = $route->getMiddleware();
         $request = $this->get('request');
         $result = $this->filterMiddleware($request, $middlewareList);
@@ -289,9 +282,7 @@ class Application extends Container
             /**
              * resolve controller
              */
-            $action = $matchResult['_controller'];
-            unset($matchResult['_controller']);
-            unset($matchResult['_route']);
+            $action = $route->getAction();
             if ($action instanceof \Closure) {
                 $data = call_user_func($action, $router);
                 return $this->makeResponse($data);
@@ -310,13 +301,11 @@ class Application extends Container
                 if (empty($matchResult)) {
                     $data = call_user_func([$controller, $methodName]);
                 } else {
-                    $data = call_user_func_array([$controller, $methodName], $matchResult);
+                    $data = call_user_func_array([$controller, $methodName], $params);
                 }
 
                 return $this->makeResponse($data);
             }
-        } catch (ResourceNotFoundException $e) {
-            return $this->makeResponse($e->getMessage(), 404);
         } catch (HttpException $e) {
             return $this->makeResponse($e->getMessage(), $e->getCode());
         }
