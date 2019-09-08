@@ -158,10 +158,8 @@ class Application extends Container
 
         require $this->rootPath . '/routes/web.php';
 
-        $routes = $router->getRoutes();
-
         try {
-            $response = $this->resolveRequest($this->get('request'), $routes);
+            $response = $this->resolveRequest($this->get('request'), $router);
         } catch (UrlMatchException $e) {
             $response = $this->makeResponse($e->getMessage(), 404);
         }
@@ -270,6 +268,11 @@ class Application extends Container
         /** @var Route $route */
         $route = $matchResult['route'];
         $params = $matchResult['params'];
+
+        $params = array_map(function ($param){
+            return urldecode($param);
+        }, $params);
+
         $middlewareList = $route->getMiddleware();
         $request = $this->get('request');
         $result = $this->filterMiddleware($request, $middlewareList);
@@ -284,7 +287,7 @@ class Application extends Container
              */
             $action = $route->getAction();
             if ($action instanceof \Closure) {
-                $data = call_user_func($action, $router);
+                $data = call_user_func_array($action, $params);
                 return $this->makeResponse($data);
             } else {
                 $actionArr = explode('::', $action);
