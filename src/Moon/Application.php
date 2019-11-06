@@ -127,6 +127,8 @@ class Application extends Container
         }
 
         $this->handleError();
+
+        $this->initRoutes();
     }
 
     protected function bootstrap()
@@ -144,19 +146,39 @@ class Application extends Container
         return $this;
     }
 
+    public function initRoutes()
+    {
+        $route_config = $this->get('config')->get('route');
+
+        $router = new Router(null, [
+            'namespace' => isset($route_config['namespace']) ? $route_config['namespace'] : 'App\Controllers',
+            'prefix' => isset($route_config['prefix']) ? $route_config['prefix'] : null,
+            'middleware' => isset($route_config['middleware']) ? $route_config['middleware'] : [],
+        ]);
+
+        $this->add('router', $router);
+
+        if (isset($route_config['groups'])) {
+            foreach ($route_config['groups'] as $group) {
+                $router->group([
+                    'namespace' => isset($group['namespace']) ? $group['namespace'] : null,
+                    'prefix' => isset($group['prefix']) ? $group['prefix'] : null,
+                    'middleware' => isset($group['middleware']) ? $group['middleware'] : [],
+                ], function (Router $router) use ($group) {
+                    require_once $group['file'];
+                });
+            }
+        }
+    }
+
     public function run()
     {
         $this->add('request', Request::createFromGlobals());
 
         $this->bootstrap();
 
-        $router = new Router(null, [
-            'namespace' => 'App\\Controllers',
-        ]);
-
-        $this->add('router', $router);
-
-        require $this->rootPath . '/routes/web.php';
+        $router = $this->get('router');
+        //var_dump($router->getRoutes());exit;
 
         try {
             $response = $this->resolveRequest($this->get('request'), $router);
@@ -269,7 +291,7 @@ class Application extends Container
         $route = $matchResult['route'];
         $params = $matchResult['params'];
 
-        $params = array_map(function ($param){
+        $params = array_map(function ($param) {
             return urldecode($param);
         }, $params);
 
