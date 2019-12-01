@@ -74,6 +74,7 @@ class Application
         $this->container = is_null($container) ? new Container() : $container;
 
         \Moon::$app = $this;
+        \Moon::$container = $this->container;
 
         $this->init();
     }
