@@ -3,4 +3,5 @@
 - [ ] router list match
 - [ ] router cache
 - [ ] router shortcut
+- [ ] log category
 - [ ] container dependency injection
