@@ -1,7 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: ttt
+ * User: Heropoo
  * Date: 2018/1/29
  * Time: 11:30
  */
@@ -42,23 +41,5 @@ class Container
             return $this->instances[$key];
         }
         throw new Exception("Class or instance named '$key' is not found!");
-    }
-
-    /**
-     * @param string $componentName
-     * @param array $params
-     * @return mixed
-     */
-    protected function makeComponent($componentName, $params){
-        $className = $params['class'];
-        unset($params['class']);
-        $object = new $className();
-        if (!empty($params)) {
-            foreach ($params as $attribute => $value) {
-                $object->$attribute = $value;
-            }
-        }
-        $this->add($componentName, $object);
-        return $object;
     }
 }
