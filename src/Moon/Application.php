@@ -245,6 +245,9 @@ class Application
         }
         $console = new Console();
         $this->container->add('console', $console);
+        if(!file_exists($this->rootPath . '/routes/console.php')){
+            throw new Exception('Console route file '.$this->rootPath . '/routes/console.php is not exists.');
+        }
         require $this->rootPath . '/routes/console.php';
 
         if (!isset($argv[1])) {
