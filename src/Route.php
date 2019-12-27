@@ -1,7 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: ttt
+ * User: Heropoo
  * Date: 2018/1/11
  * Time: 22:08
  */
@@ -17,7 +16,7 @@ class Route{
         /**
          * @var \Moon\Routing\Router $router
          */
-        $router = \Moon::$app->get('router');
+        $router = \Moon::$container->get('router');
         return call_user_func_array([$router, $name], $arguments);
     }
 }

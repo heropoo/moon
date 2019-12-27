@@ -7,6 +7,7 @@ use Dotenv\Exception\ExceptionInterface;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Moon\Config\Config;
+use Moon\Console\Console;
 use Moon\Routing\Router;
 use Moon\Routing\Route;
 use Moon\Container\Container;
@@ -14,17 +15,17 @@ use Moon\Routing\UrlMatchException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Moon\Routing\RouteCollection;
 use Whoops\Handler\JsonResponseHandler;
 use Whoops\Handler\PlainTextHandler;
 use Whoops\Handler\PrettyPageHandler;
 use Whoops\Run;
+use Moon\Container\Exception;
 
 /**
  * Class Application
  * @package Moon
  */
-class Application extends Container
+class Application
 {
     protected $rootPath;
     protected $configPath;
@@ -37,38 +38,55 @@ class Application extends Container
     protected $charset = 'UTF-8';
     protected $timezone = 'UTC';
 
-    public function __construct($rootPath, $configPath = null, $appPath = null)
+    /** @var Container $container */
+    public $container;
+
+    /**
+     * Application constructor.
+     * @param $rootPath
+     * @param array $options
+     * @param Container $container
+     * @throws Exception
+     */
+    public function __construct($rootPath, array $options = [], Container $container = null)
     {
         if (!is_dir($rootPath)) {
             throw new Exception("Directory '$rootPath' is not exists!");
         }
         $this->rootPath = realpath($rootPath);
 
-        if (is_null($configPath)) {
-            $configPath = $this->rootPath . '/config';
+        foreach ($options as $option => $value) {
+            $this->$option = $value;
         }
-        if (!is_dir($configPath)) {
-            throw new Exception("Directory '$configPath' is not exists!");
-        }
-        $this->configPath = realpath($configPath);
 
-        if (is_null($appPath)) {
-            $appPath = $this->rootPath . '/app';
-        }
-        if (!is_dir($appPath)) {
-            throw new Exception("Directory '$appPath' is not exists!");
-        }
-        $this->appPath = realpath($appPath);
+        $this->configPath = is_null($this->configPath) ? $this->rootPath . '/config' : $this->configPath;
+
+//        if (!is_dir($this->configPath)) {
+//            throw new Exception("Directory '$this->configPath' is not exists!");
+//        }
+
+        $this->appPath = is_null($this->appPath) ? $this->rootPath . '/app' : $this->appPath;
+
+//        if (!is_dir($appPath)) {
+//            throw new Exception("Directory '$appPath' is not exists!");
+//        }
+
+        $this->container = is_null($container) ? new Container() : $container;
 
         \Moon::$app = $this;
+        \Moon::$container = $this->container;
 
         $this->init();
     }
 
+    /**
+     * handle application errors
+     * @throws \Exception
+     */
     protected function handleError()
     {
         $logger = new Logger('app');
-        $this->add('logger', $logger);
+        $this->container->add('logger', $logger);
         $filename = $this->rootPath . '/runtime/logs/app-' . date('Y-m-d') . '.log';
         $logger->pushHandler(new StreamHandler($filename, Logger::ERROR));
 
@@ -105,7 +123,7 @@ class Application extends Container
         require_once dirname(__DIR__) . '/helpers.php';
 
         $config = new Config($this->configPath);
-        $this->add('config', $config);
+        $this->container->add('config', $config);
 
         $this->config = $config->get('app', true);
 
@@ -146,9 +164,27 @@ class Application extends Container
         return $this;
     }
 
+    /**
+     * @param string $componentName
+     * @param array $params
+     * @return mixed
+     */
+    protected function makeComponent($componentName, $params){
+        $className = $params['class'];
+        unset($params['class']);
+        $object = new $className();
+        if (!empty($params)) {
+            foreach ($params as $attribute => $value) {
+                $object->$attribute = $value;
+            }
+        }
+        $this->container->add($componentName, $object);
+        return $object;
+    }
+
     public function initRoutes()
     {
-        $route_config = $this->get('config')->get('route');
+        $route_config = $this->container->get('config')->get('route');
 
         $router = new Router([
             'namespace' => isset($route_config['namespace']) ? $route_config['namespace'] : 'App\Controllers',
@@ -156,7 +192,7 @@ class Application extends Container
             'middleware' => isset($route_config['middleware']) ? $route_config['middleware'] : [],
         ]);
 
-        $this->add('router', $router);
+        $this->container->add('router', $router);
 
         if (isset($route_config['groups'])) {
             foreach ($route_config['groups'] as $group) {
@@ -173,14 +209,15 @@ class Application extends Container
 
     public function run()
     {
-        $this->add('request', Request::createFromGlobals());
+        $this->container->add('request', Request::createFromGlobals());
 
         $this->bootstrap();
 
-        $router = $this->get('router');
+        $router = $this->container->get('router');
+        //var_dump($router->getRoutes());exit;
 
         try {
-            $response = $this->resolveRequest($this->get('request'), $router);
+            $response = $this->resolveRequest($this->container->get('request'), $router);
         } catch (UrlMatchException $e) {
             $response = $this->makeResponse($e->getMessage(), $e->getCode());
         }
@@ -205,7 +242,10 @@ class Application extends Container
             }
         }
         $console = new Console();
-        $this->add('console', $console);
+        $this->container->add('console', $console);
+        if(!file_exists($this->rootPath . '/routes/console.php')){
+            throw new Exception('Console route file '.$this->rootPath . '/routes/console.php is not exists.');
+        }
         require $this->rootPath . '/routes/console.php';
 
         if (!isset($argv[1])) {
@@ -228,6 +268,7 @@ class Application extends Container
      * @param Request $request
      * @param Router $router
      * @return JsonResponse|Response
+     * @throws Exception
      * @throws UrlMatchException
      */
     protected function resolveRequest(Request $request, Router $router)
@@ -283,7 +324,7 @@ class Application extends Container
         /**
          * @var Router $router
          */
-        //$router = $this->get('router');
+        //$router = $this->container->get('router');
         /** @var Route $route */
         $route = $matchResult['route'];
         $params = $matchResult['params'];
@@ -293,7 +334,7 @@ class Application extends Container
         }, $params);
 
         $middlewareList = $route->getMiddleware();
-        $request = $this->get('request');
+        $request = $this->container->get('request');
         $result = $this->filterMiddleware($request, $middlewareList);
 
         if (!is_null($result)) {
@@ -333,6 +374,12 @@ class Application extends Container
         }
     }
 
+    /**
+     * @param $name
+     * @param $arguments
+     * @return mixed
+     * @throws Exception
+     */
     public function __call($name, $arguments)
     {
         if (strpos($name, 'get') === 0) { //get protected attribute

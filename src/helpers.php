@@ -1,7 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: ttt
+ * User: Heropoo
  * Date: 2018/1/12
  * Time: 15:37
  */
@@ -116,7 +115,7 @@ if (!function_exists('asset')) {
         /**
          * @var \Symfony\Component\HttpFoundation\Request $request
          */
-        $request = \Moon::$app->get('request');
+        $request = \Moon::$container->get('request');
         if ($full) {
             return $request->getSchemeAndHttpHost() . $request->getBasePath() . '/' . $path;
         }
@@ -127,7 +126,7 @@ if (!function_exists('asset')) {
 if (!function_exists('app')) {
     /**
      * @param string $key
-     * @return \Moon\Application
+     * @return \Moon\Application|mixed
      */
     function app($key = null)
     {
@@ -135,7 +134,7 @@ if (!function_exists('app')) {
         if (is_null($key)) {
             return $app;
         }
-        return $app->get($key);
+        return $app->container->get($key);
     }
 }
 
@@ -147,7 +146,7 @@ if (!function_exists('request')) {
      */
     function request($key = null, $default = null)
     {
-        $request = \Moon::$app->get('request');
+        $request = \Moon::$container->get('request');
         if (is_null($key)) {
             return $request;
         }
@@ -160,6 +159,7 @@ if (!function_exists('url')) {
     /**
      * @param string $path
      * @return string
+     * @throws \Moon\Container\Exception
      */
     function url($path = '')
     {
@@ -172,7 +172,7 @@ if (!function_exists('url')) {
         /**
          * @var \Symfony\Component\HttpFoundation\Request $request
          */
-        $request = \Moon::$app->get('request');
+        $request = \Moon::$container->get('request');
         return $request->getSchemeAndHttpHost() . $request->getBasePath() . '/' . $path;
     }
 }
@@ -195,7 +195,7 @@ if (!function_exists('abort')) {
      * @param int $code
      * @param string $message
      * @return string
-     * @throws \Symfony\Component\Routing\Exception\ResourceNotFoundException|\Moon\HttpException
+     * @throws \Symfony\Component\Routing\Exception\ResourceNotFoundException|\Moon\HttpException //todo
      */
     function abort($code = 404, $message = '')
     {
@@ -243,7 +243,7 @@ if(!function_exists('config')){
      * @return mixed|null|\Moon\Config\Exception
      */
     function config($key, $throw = false){
-        $config = \Moon::$app->get('config');
+        $config = \Moon::$container->get('config');
         return $config->get($key, $throw);
     }
 }

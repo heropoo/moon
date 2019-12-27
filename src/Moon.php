@@ -1,23 +1,23 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: ttt
+ * User: Heropoo
  * Date: 2018/1/12
  * Time: 15:39
  */
 
 class Moon
 {
-    /**
-     * @var \Moon\Application $app
-     */
+    /** @var \Moon\Application $app */
     public static $app;
+
+    /** @var \Moon\Container\Container $container */
+    public static $container;
 
     public static function command($command, $action, $description = ''){
         /**
-         * @var \Moon\Console $console
+         * @var \Moon\Console\Console $console
          */
-        $console = static::$app->get('console');
+        $console = static::$container->get('console');
         $console->add($command, $action, $description);
     }
 
@@ -26,6 +26,6 @@ class Moon
     }
 
     public static function version(){
-        return 'v0.3';
+        return 'v0.6';
     }
 }
