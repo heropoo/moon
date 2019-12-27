@@ -150,7 +150,7 @@ class Application extends Container
     {
         $route_config = $this->get('config')->get('route');
 
-        $router = new Router(null, [
+        $router = new Router([
             'namespace' => isset($route_config['namespace']) ? $route_config['namespace'] : 'App\Controllers',
             'prefix' => isset($route_config['prefix']) ? $route_config['prefix'] : null,
             'middleware' => isset($route_config['middleware']) ? $route_config['middleware'] : [],
@@ -178,16 +178,12 @@ class Application extends Container
         $this->bootstrap();
 
         $router = $this->get('router');
-        //var_dump($router->getRoutes());exit;
 
         try {
             $response = $this->resolveRequest($this->get('request'), $router);
         } catch (UrlMatchException $e) {
-            $response = $this->makeResponse($e->getMessage(), 404);
+            $response = $this->makeResponse($e->getMessage(), $e->getCode());
         }
-//        catch (MethodNotAllowedException $e) {
-//            $response = $this->makeResponse('Method not allow', 405);
-//        }
 
         $response->send();
     }
@@ -232,6 +228,7 @@ class Application extends Container
      * @param Request $request
      * @param Router $router
      * @return JsonResponse|Response
+     * @throws UrlMatchException
      */
     protected function resolveRequest(Request $request, Router $router)
     {
@@ -286,7 +283,7 @@ class Application extends Container
         /**
          * @var Router $router
          */
-        $router = $this->get('router');
+        //$router = $this->get('router');
         /** @var Route $route */
         $route = $matchResult['route'];
         $params = $matchResult['params'];
