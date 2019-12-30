@@ -7,30 +7,37 @@
 
 namespace Moon;
 
-
+/**
+ * Class View
+ * @package Moon
+ */
 class View
 {
+    protected $viewFile;
+    protected $data;
     protected $viewPath;
-
-    public $layout;
+    protected $layout;
 
     public $title;
 
-    public function __construct($viewPath, $layout = null)
+    public function __construct($viewFile, $data = [], $layout = null, $viewPath = null)
     {
+        $baseViewPath = \Moon::$app->getRootPath() . '/views';
+        $viewPath = is_null($viewPath) ? $baseViewPath : $baseViewPath . '/' . $viewPath;
+
+        $this->viewFile = $viewFile;
+        $this->data = $data;
         $this->viewPath = $viewPath;
         $this->layout = $layout;
     }
 
     /**
      * render a view
-     * @param string $view
-     * @param array $data
      * @return string
      */
-    public function render($view, array $data = [])
+    public function render()
     {
-        $content = $this->renderPart($view, $data);
+        $content = $this->renderPart($this->viewFile, $this->data);
         if ($this->layout) {
             return $this->renderPart($this->layout, ['content' => $content]);
         }
@@ -62,5 +69,15 @@ class View
     public function e($var)
     {
         return htmlspecialchars($var);
+    }
+
+    public function toString()
+    {
+        return $this->render();
+    }
+
+    public function __toString()
+    {
+        return $this->render();
     }
 }

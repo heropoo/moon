@@ -169,7 +169,8 @@ class Application
      * @param array $params
      * @return mixed
      */
-    protected function makeComponent($componentName, $params){
+    protected function makeComponent($componentName, $params)
+    {
         $className = $params['class'];
         unset($params['class']);
         $object = new $className();
@@ -243,8 +244,8 @@ class Application
         }
         $console = new Console();
         $this->container->add('console', $console);
-        if(!file_exists($this->rootPath . '/routes/console.php')){
-            throw new Exception('Console route file '.$this->rootPath . '/routes/console.php is not exists.');
+        if (!file_exists($this->rootPath . '/routes/console.php')) {
+            throw new Exception('Console route file ' . $this->rootPath . '/routes/console.php is not exists.');
         }
         require $this->rootPath . '/routes/console.php';
 
@@ -286,6 +287,8 @@ class Application
     {
         if ($data instanceof Response) {
             return $data;
+        } else if ($data instanceof View) {
+            return new Response(strval($data), $status);
         } else if (is_array($data) || is_object($data)) {
             return new JsonResponse($data, $status);
         } else {

@@ -253,13 +253,10 @@ if (!function_exists('view')) {
      * @param array $data
      * @param null|string $layout
      * @param null|string $viewPath
-     * @return string
+     * @return \Moon\View
      */
     function view($view, $data = [], $layout = null, $viewPath = null)
     {
-        $baseViewPath = Moon::$app->getRootPath() . '/views';
-        $viewPath = is_null($viewPath) ? $baseViewPath : $baseViewPath . '/' . $viewPath;
-        $viewObject = new \Moon\View($viewPath, $layout);
-        return $viewObject->render($view, $data);
+        return new \Moon\View($view, $data, $layout, $viewPath);
     }
 }
