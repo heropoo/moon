@@ -166,7 +166,7 @@ if (!function_exists('url')) {
         if (strpos($path, 'http://') === 0 || strrpos($path, 'https://') === 0) {
             return $path;
         }
-        if($path == '/'){
+        if ($path == '/') {
             $path = '';
         }
         /**
@@ -195,7 +195,7 @@ if (!function_exists('abort')) {
      * @param int $code
      * @param string $message
      * @return string
-     * @throws \Moon\HttpException 
+     * @throws \Moon\HttpException
      */
     function abort($code = 404, $message = '')
     {
@@ -203,12 +203,12 @@ if (!function_exists('abort')) {
     }
 }
 
-if (! function_exists('env')) {
+if (!function_exists('env')) {
     /**
      * Gets the value of an environment variable.
      *
-     * @param  string  $key
-     * @param  mixed   $default
+     * @param string $key
+     * @param mixed $default
      * @return mixed
      */
     function env($key, $default = null)
@@ -232,15 +232,34 @@ if (! function_exists('env')) {
     }
 }
 
-if(!function_exists('config')){
+if (!function_exists('config')) {
     /**
      * get a config
      * @param string $key
      * @param bool $throw
      * @return mixed|null|\Moon\Config\Exception
      */
-    function config($key, $throw = false){
+    function config($key, $throw = false)
+    {
         $config = \Moon::$container->get('config');
         return $config->get($key, $throw);
+    }
+}
+
+if (!function_exists('view')) {
+    /**
+     * render a view
+     * @param string $view
+     * @param array $data
+     * @param null|string $layout
+     * @param null|string $viewPath
+     * @return string
+     */
+    function view($view, $data = [], $layout = null, $viewPath = null)
+    {
+        $baseViewPath = Moon::$app->getRootPath() . '/views';
+        $viewPath = is_null($viewPath) ? $baseViewPath : $baseViewPath . '/' . $viewPath;
+        $viewObject = new \Moon\View($viewPath, $layout);
+        return $viewObject->render($view, $data);
     }
 }

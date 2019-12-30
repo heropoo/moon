@@ -12,27 +12,46 @@ class View
 {
     protected $viewPath;
 
-    public function __construct($viewPath)
+    public $layout;
+
+    public $title;
+
+    public function __construct($viewPath, $layout = null)
     {
         $this->viewPath = $viewPath;
+        $this->layout = $layout;
     }
 
     /**
-      * @param string $view
+     * render a view
+     * @param string $view
      * @param array $data
      * @return string
-     * @throws Exception
      */
     public function render($view, array $data = [])
     {
-        $viewFile = $this->viewPath.'/'.$view.'.php';
-        if(!file_exists($viewFile)){
+        $content = $this->renderPart($view, $data);
+        if ($this->layout) {
+            return $this->renderPart($this->layout, ['content' => $content]);
+        }
+        return $content;
+    }
+
+    /**
+     * render a part of view
+     * @param string $view
+     * @param array $data
+     * @return string
+     */
+    public function renderPart($view, array $data = [])
+    {
+        $viewFile = $this->viewPath . '/' . $view . '.php';
+        if (!file_exists($viewFile)) {
             throw new Exception("View file `$viewFile` is not exists");
         }
 
-        extract($data);
-
         ob_start();
+        extract($data);
         include $viewFile;
         $content = ob_get_contents();
         ob_end_clean();
@@ -40,7 +59,8 @@ class View
         return $content;
     }
 
-    public function e($var){
+    public function e($var)
+    {
         return htmlspecialchars($var);
     }
 }
