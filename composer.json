@@ -12,6 +12,7 @@
     ],
     "require": {
         "php": ">=5.4",
+        "heropoo/container": "*",
         "heropoo/routing": "*",
         "heropoo/config": "*",
         "heropoo/db": "*",
