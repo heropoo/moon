@@ -350,7 +350,8 @@ class Application
              */
             $action = $route->getAction();
             if ($action instanceof \Closure) {
-                $data = call_user_func_array($action, $params);
+                //$data = call_user_func_array($action, $params);
+                $data = $this->container->callFunction($action, $params);
                 return $this->makeResponse($data);
             } else {
                 $actionArr = explode('::', $action);
@@ -358,18 +359,18 @@ class Application
                 if (!class_exists($controllerName)) {
                     throw new Exception("Controller class '$controllerName' is not exists!");
                 }
-                $controller = new $controllerName;
-                $methodName = $actionArr[1];
-                if (!method_exists($controller, $methodName)) {
-                    throw new Exception("Controller method '$controllerName::$methodName' is not defined!");
-                }
-
-                if (empty($matchResult)) {
-                    $data = call_user_func([$controller, $methodName]);
-                } else {
-                    $data = call_user_func_array([$controller, $methodName], $params);
-                }
-
+                $methodName = isset($actionArr[1]) ? $actionArr[1] : null;
+//                $controller = new $controllerName;
+//                if (!method_exists($controller, $methodName)) {
+//                    throw new Exception("Controller method '$controllerName::$methodName' is not defined!");
+//                }
+//
+//                if (empty($matchResult)) {
+//                    $data = call_user_func([$controller, $methodName]);
+//                } else {
+//                    $data = call_user_func_array([$controller, $methodName], $params);
+//                }
+                $data = $this->container->callMethod($controllerName, $methodName, $params);
                 return $this->makeResponse($data);
             }
         } catch (HttpException $e) {
