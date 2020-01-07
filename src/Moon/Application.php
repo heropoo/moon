@@ -147,6 +147,8 @@ class Application
         $this->handleError();
 
         $this->initRoutes();
+
+        $this->initComponents();
     }
 
     protected function bootstrap()
@@ -159,28 +161,42 @@ class Application
             if (!key_exists($componentName, $this->config['components'])) {
                 throw new Exception("Components '$componentName' is not found in configuration file");
             }
-            $this->makeComponent($componentName, $this->config['components'][$componentName]);
+            //$this->makeComponent($componentName, $this->config['components'][$componentName]);
+            $this->container->make($componentName, true);
         }
         return $this;
     }
 
-    /**
-     * @param string $componentName
-     * @param array $params
-     * @return mixed
-     */
-    protected function makeComponent($componentName, $params)
+//    /**
+//     * @param string $componentName
+//     * @param array $params
+//     * @return mixed
+//     */
+//    protected function makeComponent($componentName, $params)
+//    {
+//        $className = $params['class'];
+//        unset($params['class']);
+//        $object = new $className();
+//        if (!empty($params)) {
+//            foreach ($params as $attribute => $value) {
+//                $object->$attribute = $value;
+//            }
+//        }
+//        $this->container->add($componentName, $object);
+//        return $object;
+//    }
+
+    public function initComponents()
     {
-        $className = $params['class'];
-        unset($params['class']);
-        $object = new $className();
-        if (!empty($params)) {
-            foreach ($params as $attribute => $value) {
-                $object->$attribute = $value;
-            }
+        isset($this->config['components']) ?: $this->config['components'] = [];
+        foreach ($this->config['components'] as $componentName => $params) {
+            $className = $params['class'];
+            unset($params['class']);
+            $this->container->bind($componentName, function () use ($className, $params) {
+                $ref = new \ReflectionClass($className);
+                return $ref->newInstanceArgs($params);
+            }, true);
         }
-        $this->container->add($componentName, $object);
-        return $object;
     }
 
     public function initRoutes()

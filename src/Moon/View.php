@@ -31,6 +31,16 @@ class View
         $this->layout = $layout;
     }
 
+    public function getViewPath()
+    {
+        return $this->viewPath;
+    }
+
+    public function getLayout()
+    {
+        return $this->layout;
+    }
+
     /**
      * render a view
      * @return string
