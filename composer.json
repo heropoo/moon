@@ -26,6 +26,9 @@
         "psr-4":{
             "": "src/",
             "Moon\\": "src/Moon"
-        }
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     }
 }

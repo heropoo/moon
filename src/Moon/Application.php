@@ -120,7 +120,7 @@ class Application
             trigger_error($e->getMessage(), E_USER_ERROR);
         }
 
-        require_once dirname(__DIR__) . '/helpers.php';
+        //require_once dirname(__DIR__) . '/helpers.php';
 
         $config = new Config($this->configPath);
         $this->container->add('config', $config);
