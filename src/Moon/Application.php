@@ -23,6 +23,14 @@ use Moon\Container\Exception;
 
 /**
  * Class Application
+ * @method string getEnvironment()
+ * @method string getRootPath()
+ * @method string getConfigPath()
+ * @method string getAppPath()
+ * @method string getCharset()
+ * @method string getTimezone()
+ * @method array getConfig()
+ * @method bool getDebug()
  * @package Moon
  */
 class Application
@@ -46,7 +54,6 @@ class Application
      * @param $rootPath
      * @param array $options
      * @param Container $container
-     * @throws Exception
      */
     public function __construct($rootPath, array $options = [], Container $container = null)
     {
@@ -61,15 +68,7 @@ class Application
 
         $this->configPath = is_null($this->configPath) ? $this->rootPath . '/config' : $this->configPath;
 
-//        if (!is_dir($this->configPath)) {
-//            throw new Exception("Directory '$this->configPath' is not exists!");
-//        }
-
         $this->appPath = is_null($this->appPath) ? $this->rootPath . '/app' : $this->appPath;
-
-//        if (!is_dir($appPath)) {
-//            throw new Exception("Directory '$appPath' is not exists!");
-//        }
 
         $this->container = is_null($container) ? new Container() : $container;
 
@@ -81,7 +80,6 @@ class Application
 
     /**
      * handle application errors
-     * @throws \Exception
      */
     protected function handleError()
     {
@@ -161,30 +159,10 @@ class Application
             if (!key_exists($componentName, $this->config['components'])) {
                 throw new Exception("Components '$componentName' is not found in configuration file");
             }
-            //$this->makeComponent($componentName, $this->config['components'][$componentName]);
             $this->container->make($componentName, true);
         }
         return $this;
     }
-
-//    /**
-//     * @param string $componentName
-//     * @param array $params
-//     * @return mixed
-//     */
-//    protected function makeComponent($componentName, $params)
-//    {
-//        $className = $params['class'];
-//        unset($params['class']);
-//        $object = new $className();
-//        if (!empty($params)) {
-//            foreach ($params as $attribute => $value) {
-//                $object->$attribute = $value;
-//            }
-//        }
-//        $this->container->add($componentName, $object);
-//        return $object;
-//    }
 
     public function initComponents()
     {
@@ -231,7 +209,6 @@ class Application
         $this->bootstrap();
 
         $router = $this->container->get('router');
-        //var_dump($router->getRoutes());exit;
 
         try {
             $response = $this->resolveRequest($this->container->get('request'), $router);
@@ -245,10 +222,10 @@ class Application
     public function runConsole()
     {
         $this->bootstrap();
-        return $this->handCommand();
+        return $this->handleCommand();
     }
 
-    protected function handCommand()
+    protected function handleCommand()
     {
         $argv = $_SERVER['argv'];
         foreach ($argv as $key => $arg) {
