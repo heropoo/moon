@@ -86,7 +86,7 @@ class Application
         $logger = new Logger('app');
         $this->container->add('logger', $logger);
         $filename = $this->rootPath . '/runtime/logs/app-' . date('Y-m-d') . '.log';
-        $logger->pushHandler(new StreamHandler($filename, Logger::ERROR));
+        $logger->pushHandler(new StreamHandler($filename, Logger::ERROR, true, 666));
 
         $whoops = new Run();
 
