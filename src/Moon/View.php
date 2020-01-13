@@ -41,6 +41,12 @@ class View
         return $this->layout;
     }
 
+    public function setTitle($title)
+    {
+        $this->title = $title;
+        return $this;
+    }
+
     /**
      * render a view
      * @return string
