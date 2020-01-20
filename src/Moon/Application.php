@@ -86,7 +86,7 @@ class Application
         $logger = new Logger('app');
         $this->container->add('logger', $logger);
         $filename = $this->rootPath . '/runtime/logs/app-' . date('Y-m-d') . '.log';
-        $logger->pushHandler(new StreamHandler($filename, Logger::DEBUG, true, 777));
+        $logger->pushHandler(new StreamHandler($filename, Logger::DEBUG));
 
         $whoops = new Run();
 
@@ -118,8 +118,6 @@ class Application
             trigger_error($e->getMessage(), E_USER_ERROR);
         }
 
-        //require_once dirname(__DIR__) . '/helpers.php';
-
         $config = new Config($this->configPath);
         $this->container->add('config', $config);
 
@@ -149,31 +147,24 @@ class Application
         $this->initComponents();
     }
 
-    protected function bootstrap()
-    {
-        $components = isset($this->config['bootstrap']) ? $this->config['bootstrap'] : [];
-
-        isset($this->config['components']) ?: $this->config['components'] = [];
-
-        foreach ($components as $componentName) {
-            if (!key_exists($componentName, $this->config['components'])) {
-                throw new Exception("Components '$componentName' is not found in configuration file");
-            }
-            $this->container->make($componentName, true);
-        }
-        return $this;
-    }
-
     public function initComponents()
     {
         isset($this->config['components']) ?: $this->config['components'] = [];
         foreach ($this->config['components'] as $componentName => $params) {
+
             $className = $params['class'];
             unset($params['class']);
+
+            if(!isset($params['auto_inject_by_class']) || $params['auto_inject_by_class'] !== false){
+                $this->container->alias($className, $componentName);
+            }
+            unset($params['auto_inject_by_class']);
+
             $this->container->bind($componentName, function () use ($className, $params) {
                 $ref = new \ReflectionClass($className);
                 return $ref->newInstanceArgs($params);
             }, true);
+
         }
     }
 
@@ -206,8 +197,6 @@ class Application
     {
         $this->container->add('request', Request::createFromGlobals());
 
-        $this->bootstrap();
-
         $router = $this->container->get('router');
 
         try {
@@ -221,7 +210,6 @@ class Application
 
     public function runConsole()
     {
-        $this->bootstrap();
         return $this->handleCommand();
     }
 
