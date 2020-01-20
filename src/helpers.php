@@ -67,7 +67,7 @@ if (!function_exists('app_path')) {
      */
     function app_path($path = '')
     {
-        return \App::$app->getAppPath() . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+        return \App::$instance->getAppPath() . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
     }
 }
 
@@ -78,7 +78,7 @@ if (!function_exists('storage_path')) {
      */
     function storage_path($path = '')
     {
-        return \App::$app->getRootPath() . DIRECTORY_SEPARATOR . 'storage' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+        return \App::$instance->getRootPath() . DIRECTORY_SEPARATOR . 'storage' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
     }
 }
 
@@ -89,7 +89,7 @@ if (!function_exists('runtime_path')) {
      */
     function runtime_path($path = '')
     {
-        return \App::$app->getRootPath() . DIRECTORY_SEPARATOR . 'runtime' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+        return \App::$instance->getRootPath() . DIRECTORY_SEPARATOR . 'runtime' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
     }
 }
 
@@ -100,7 +100,7 @@ if (!function_exists('public_path')) {
      */
     function public_path($path = '')
     {
-        return \App::$app->getRootPath() . DIRECTORY_SEPARATOR . 'public' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+        return \App::$instance->getRootPath() . DIRECTORY_SEPARATOR . 'public' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
     }
 }
 
@@ -130,7 +130,7 @@ if (!function_exists('app')) {
      */
     function app($key = null)
     {
-        $app = \App::$app;
+        $app = \App::$instance;
         if (is_null($key)) {
             return $app;
         }
