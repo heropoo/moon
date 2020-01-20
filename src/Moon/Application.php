@@ -279,7 +279,7 @@ class Application
     {
         $argv = $_SERVER['argv'];
         foreach ($argv as $key => $arg) {
-            if ((strpos($arg, 'App') + 4) == strlen($arg) || $arg === 'App') {
+            if ((strpos($arg, 'moon') + 4) == strlen($arg) || $arg === 'moon') {
                 break;
             } else {
                 unset($argv[$key]);
