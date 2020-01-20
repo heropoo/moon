@@ -56,7 +56,7 @@ if (!function_exists('root_path')) {
      */
     function root_path($path = '')
     {
-        return \Moon::$app->getRootPath() . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+        return \App::$app->getRootPath() . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
     }
 }
 
@@ -67,7 +67,7 @@ if (!function_exists('app_path')) {
      */
     function app_path($path = '')
     {
-        return \Moon::$app->getAppPath() . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+        return \App::$app->getAppPath() . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
     }
 }
 
@@ -78,7 +78,7 @@ if (!function_exists('storage_path')) {
      */
     function storage_path($path = '')
     {
-        return \Moon::$app->getRootPath() . DIRECTORY_SEPARATOR . 'storage' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+        return \App::$app->getRootPath() . DIRECTORY_SEPARATOR . 'storage' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
     }
 }
 
@@ -89,7 +89,7 @@ if (!function_exists('runtime_path')) {
      */
     function runtime_path($path = '')
     {
-        return \Moon::$app->getRootPath() . DIRECTORY_SEPARATOR . 'runtime' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+        return \App::$app->getRootPath() . DIRECTORY_SEPARATOR . 'runtime' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
     }
 }
 
@@ -100,7 +100,7 @@ if (!function_exists('public_path')) {
      */
     function public_path($path = '')
     {
-        return \Moon::$app->getRootPath() . DIRECTORY_SEPARATOR . 'public' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+        return \App::$app->getRootPath() . DIRECTORY_SEPARATOR . 'public' . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
     }
 }
 
@@ -113,11 +113,11 @@ if (!function_exists('asset')) {
     function asset($path, $full = true)
     {
         /**
-         * @var \Symfony\Component\HttpFoundation\Request $request
+         * @var \Moon\Request\Request $request
          */
-        $request = \Moon::$container->get('request');
+        $request = \App::$container->get('request');
         if ($full) {
-            return $request->getSchemeAndHttpHost() . $request->getBasePath() . '/' . $path;
+            return '//'. $request->getBasePath() . '/' . $path;
         }
         return $request->getBasePath() . '/' . $path;
     }
@@ -130,7 +130,7 @@ if (!function_exists('app')) {
      */
     function app($key = null)
     {
-        $app = \Moon::$app;
+        $app = \App::$app;
         if (is_null($key)) {
             return $app;
         }
@@ -142,11 +142,11 @@ if (!function_exists('request')) {
     /**
      * @param null|string $key
      * @param null|mixed $default
-     * @return null|mixed|\Symfony\Component\HttpFoundation\Request $request
+     * @return null|mixed|\Moon\Request\Request $request
      */
     function request($key = null, $default = null)
     {
-        $request = \Moon::$container->get('request');
+        $request = \App::$container->get('request');
         if (is_null($key)) {
             return $request;
         }
@@ -172,7 +172,7 @@ if (!function_exists('url')) {
         /**
          * @var \Symfony\Component\HttpFoundation\Request $request
          */
-        $request = \Moon::$container->get('request');
+        $request = \App::$container->get('request');
         return $request->getSchemeAndHttpHost() . $request->getBasePath() . '/' . $path;
     }
 }
@@ -241,7 +241,7 @@ if (!function_exists('config')) {
      */
     function config($key, $throw = false)
     {
-        $config = \Moon::$container->get('config');
+        $config = \App::$container->get('config');
         return $config->get($key, $throw);
     }
 }

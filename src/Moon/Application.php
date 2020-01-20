@@ -13,13 +13,14 @@ use Moon\Routing\Route;
 use Moon\Container\Container;
 use Moon\Routing\UrlMatchException;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
+use Moon\Request\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Whoops\Handler\JsonResponseHandler;
 use Whoops\Handler\PlainTextHandler;
 use Whoops\Handler\PrettyPageHandler;
 use Whoops\Run;
-use Moon\Container\Exception;
+use Swoole\Http\Request as SwooleHttpRequest;
+use Swoole\Http\Response as SwooleHttpResponse;
 
 /**
  * Class Application
@@ -72,8 +73,8 @@ class Application
 
         $this->container = is_null($container) ? new Container() : $container;
 
-        \Moon::$app = $this;
-        \Moon::$container = $this->container;
+        \App::$instance = $this;
+        \App::$container = $this->container;
 
         $this->init();
     }
@@ -140,7 +141,11 @@ class Application
             $this->debug = $this->config['debug'];
         }
 
-        $this->handleError();
+        $this->initLogger();
+
+        if (isset($_SERVER)) {
+            $this->handleError();
+        }
 
         $this->initRoutes();
 
@@ -166,6 +171,14 @@ class Application
             }, true);
 
         }
+    }
+
+    protected function initLogger()
+    {
+        $logger = new Logger('app');
+        $this->container->add('logger', $logger);
+        $filename = $this->rootPath . '/runtime/logs/app-' . date('Y-m-d') . '.log';
+        $logger->pushHandler(new StreamHandler($filename, Logger::DEBUG));
     }
 
     public function initRoutes()
@@ -208,6 +221,55 @@ class Application
         $response->send();
     }
 
+    public function handleSwooleRequest(SwooleHttpRequest $swooleHttpRequest, SwooleHttpResponse $swooleHttpResponse)
+    {
+        $request = Request::createFromSwooleHttpRequest($swooleHttpRequest);
+        $this->container->add('request', $request);
+
+        /** @var Router $router */
+        $router = $this->container->get('router');
+
+        try {
+            $response = $this->resolveRequest($request, $router);
+        } catch (UrlMatchException $e) {
+            $response = $this->makeResponse($e->getMessage(), $e->getCode());
+        } catch (\Throwable $throwable) {
+            echo $throwable->__toString() . PHP_EOL;
+
+            $logger = $this->container->get('logger');
+            $logger->error($throwable->__toString());
+
+            $response = $this->makeResponse('Internal Server Error', 500);
+        }
+
+        // set session
+        if ($request->getSession()) {
+            $session = $request->getSession();
+            $sessionCookieParams = $request->getSession()->getCookieParams();
+            $swooleHttpResponse->setCookie($session->getName(), $session->getId(), $sessionCookieParams['lifetime'],
+                $sessionCookieParams['path'], $sessionCookieParams['domain'], $sessionCookieParams['secure'],
+                $sessionCookieParams['httponly'], $sessionCookieParams['samesite']);
+
+            $session->write();
+        }
+
+        //set headers
+        $headers = [];
+        foreach ($response->headers->all() as $key => $value) {
+            $headers[$key] = $value[0];
+        }
+        $swooleHttpResponse->header = $headers;
+
+        //set http status code
+        $swooleHttpResponse->setStatusCode($response->getStatusCode());
+
+        //send
+        $swooleHttpResponse->end($response->getContent());
+
+        return $response;
+    }
+
+
     public function runConsole()
     {
         return $this->handleCommand();
@@ -217,7 +279,7 @@ class Application
     {
         $argv = $_SERVER['argv'];
         foreach ($argv as $key => $arg) {
-            if ((strpos($arg, 'moon') + 4) == strlen($arg) || $arg === 'moon') {
+            if ((strpos($arg, 'App') + 4) == strlen($arg) || $arg === 'App') {
                 break;
             } else {
                 unset($argv[$key]);
@@ -231,7 +293,7 @@ class Application
         require $this->rootPath . '/routes/console.php';
 
         if (!isset($argv[1])) {
-            echo 'Moon Console ' . \Moon::version() . PHP_EOL;
+            echo 'Moon Console ' . \App::version() . PHP_EOL;
             echo '------------------------------------------------' . PHP_EOL;
             // command list
             ksort($console->commands);
@@ -331,7 +393,6 @@ class Application
              */
             $action = $route->getAction();
             if ($action instanceof \Closure) {
-                //$data = call_user_func_array($action, $params);
                 $data = $this->container->callFunction($action, $params);
                 return $this->makeResponse($data);
             } else {
@@ -341,16 +402,6 @@ class Application
                     throw new Exception("Controller class '$controllerName' is not exists!");
                 }
                 $methodName = isset($actionArr[1]) ? $actionArr[1] : null;
-//                $controller = new $controllerName;
-//                if (!method_exists($controller, $methodName)) {
-//                    throw new Exception("Controller method '$controllerName::$methodName' is not defined!");
-//                }
-//
-//                if (empty($matchResult)) {
-//                    $data = call_user_func([$controller, $methodName]);
-//                } else {
-//                    $data = call_user_func_array([$controller, $methodName], $params);
-//                }
                 $data = $this->container->callMethod($controllerName, $methodName, $params);
                 return $this->makeResponse($data);
             }

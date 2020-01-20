@@ -22,7 +22,7 @@ class View
 
     public function __construct($viewFile, $data = [], $layout = null, $viewPath = null)
     {
-        $baseViewPath = \Moon::$app->getRootPath() . '/views';
+        $baseViewPath = \App::$instance->getRootPath() . '/views';
         $viewPath = is_null($viewPath) ? $baseViewPath : $baseViewPath . '/' . $viewPath;
 
         $this->viewFile = $viewFile;

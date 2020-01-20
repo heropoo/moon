@@ -17,6 +17,7 @@
         "heropoo/config": "*",
         "heropoo/db": "*",
         "heropoo/console": "*",
+        "heropoo/request": "*",
         "monolog/monolog": "^1.0",
         "filp/whoops": "^2.1",
         "vlucas/phpdotenv": "^2.5",
