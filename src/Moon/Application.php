@@ -84,10 +84,7 @@ class Application
      */
     protected function handleError()
     {
-        $logger = new Logger('app');
-        $this->container->add('logger', $logger);
-        $filename = $this->rootPath . '/runtime/logs/app-' . date('Y-m-d') . '.log';
-        $logger->pushHandler(new StreamHandler($filename, Logger::DEBUG));
+        $logger = $this->container->get('logger');
 
         $whoops = new Run();
 
@@ -143,7 +140,7 @@ class Application
 
         $this->initLogger();
 
-        if (isset($_SERVER)) {
+        if (isset($_SERVER)) { //todo In swoole or fastcgi
             $this->handleError();
         }
 
@@ -160,7 +157,7 @@ class Application
             $className = $params['class'];
             unset($params['class']);
 
-            if(!isset($params['auto_inject_by_class']) || $params['auto_inject_by_class'] !== false){
+            if (!isset($params['auto_inject_by_class']) || $params['auto_inject_by_class'] !== false) {
                 $this->container->alias($className, $componentName);
             }
             unset($params['auto_inject_by_class']);
