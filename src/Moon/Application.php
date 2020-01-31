@@ -12,6 +12,7 @@ use Moon\Routing\Router;
 use Moon\Routing\Route;
 use Moon\Container\Container;
 use Moon\Routing\UrlMatchException;
+use Moon\Session\Session;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Moon\Request\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -205,7 +206,8 @@ class Application
 
     public function run()
     {
-        $this->container->add('request', Request::createFromGlobals());
+        $request = Request::createFromGlobals();
+        $this->container->add('request', $request);
 
         $router = $this->container->get('router');
 
@@ -213,6 +215,16 @@ class Application
             $response = $this->resolveRequest($this->container->get('request'), $router);
         } catch (UrlMatchException $e) {
             $response = $this->makeResponse($e->getMessage(), $e->getCode());
+        }
+
+        // set session
+        if($request->getSession()){
+            /** @var Session $session */
+            $session = $request->getSession();
+            $session->write();
+            $cookieParams = $session->getCookieParams();
+            setcookie($session->getName(), $session->getId(), $cookieParams['lifetime'], $cookieParams['path'], $cookieParams['domain'],
+                $cookieParams['secure'], $cookieParams['httponly']);
         }
 
         $response->send();
