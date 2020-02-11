@@ -257,7 +257,7 @@ class Application
             $sessionCookieParams = $request->getSession()->getCookieParams();
             $swooleHttpResponse->setCookie($session->getName(), $session->getId(), $sessionCookieParams['lifetime'],
                 $sessionCookieParams['path'], $sessionCookieParams['domain'], $sessionCookieParams['secure'],
-                $sessionCookieParams['httponly'], $sessionCookieParams['samesite']);
+                $sessionCookieParams['httponly']);
 
             $session->write();
         }
