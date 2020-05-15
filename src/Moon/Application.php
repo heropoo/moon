@@ -235,11 +235,14 @@ class Application
         $request = Request::createFromSwooleHttpRequest($swooleHttpRequest);
         $this->container->add('request', $request);
 
+        $response = new Response();
+        $this->container->add('response', $response);
+
         /** @var Router $router */
         $router = $this->container->get('router');
 
         try {
-            $response = $this->resolveRequest($request, $router);
+            $response = $this->resolveRequest($router, $request, $response);
         } catch (UrlMatchException $e) {
             $response = $this->makeResponse($e->getMessage(), $e->getCode());
         } catch (\Throwable $throwable) {
@@ -322,12 +325,13 @@ class Application
 
     /**
      * @param Request $request
+     * @param Response $response
      * @param Router $router
      * @return JsonResponse|Response
      * @throws Exception
      * @throws UrlMatchException
      */
-    protected function resolveRequest(Request $request, Router $router)
+    protected function resolveRequest(Router $router, Request $request, Response $response)
     {
         $matchResult = $router->dispatch($request->getPathInfo(), $request->getMethod());
         return $this->resolveController($matchResult);
@@ -340,15 +344,27 @@ class Application
      */
     protected function makeResponse($data, $status = 200)
     {
+        /** @var Response $response */
+        $response = $this->container->get('response');
+
+        $response->setStatusCode($status);
+
         if ($data instanceof Response) {
-            return $data;
+            $headers = $data->headers->all();
+            foreach ($headers as $key => $value) {
+                $response->headers->set($key, $value);
+            }
+            $response->setContent($data->getContent());
         } else if ($data instanceof View) {
-            return new Response(strval($data), $status);
+            $response->setContent(strval($data));
         } else if (is_array($data) || is_object($data)) {
-            return new JsonResponse($data, $status);
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setContent(json_encode($data));
         } else {
-            return new Response(strval($data), $status);
+            $response->setContent($data);
         }
+
+        return $response;
     }
 
     /**
