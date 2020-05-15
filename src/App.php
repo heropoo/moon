@@ -20,6 +20,6 @@ class App
 
     public static function version()
     {
-        return 'v0.11';
+        return 'v0.12';
     }
 }
