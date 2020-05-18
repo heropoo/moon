@@ -212,7 +212,7 @@ class Application
         $router = $this->container->get('router');
 
         try {
-            $response = $this->resolveRequest($this->container->get('request'), $router);
+            $response = $this->resolveRequest($router, $this->container->get('request'));
         } catch (UrlMatchException $e) {
             $response = $this->makeResponse($e->getMessage(), $e->getCode());
         }
@@ -242,7 +242,7 @@ class Application
         $router = $this->container->get('router');
 
         try {
-            $response = $this->resolveRequest($router, $request, $response);
+            $response = $this->resolveRequest($router, $request);
         } catch (UrlMatchException $e) {
             $response = $this->makeResponse($e->getMessage(), $e->getCode());
         } catch (\Throwable $throwable) {
@@ -271,7 +271,6 @@ class Application
             $headers[$key] = $value[0];
         }
         $swooleHttpResponse->header = $headers;
-
         //set http status code
         $swooleHttpResponse->setStatusCode($response->getStatusCode());
 
@@ -325,13 +324,12 @@ class Application
 
     /**
      * @param Request $request
-     * @param Response $response
      * @param Router $router
      * @return JsonResponse|Response
      * @throws Exception
      * @throws UrlMatchException
      */
-    protected function resolveRequest(Router $router, Request $request, Response $response)
+    protected function resolveRequest(Router $router, Request $request)
     {
         $matchResult = $router->dispatch($request->getPathInfo(), $request->getMethod());
         return $this->resolveController($matchResult);
@@ -346,24 +344,28 @@ class Application
     {
         /** @var Response $response */
         $response = $this->container->get('response');
-
-        $response->setStatusCode($status);
-
+        if ($status == 200) {
+            $status = $response->getStatusCode();
+        }
+        //$status = $response->getStatusCode() != $status;
         if ($data instanceof Response) {
             $headers = $data->headers->all();
             foreach ($headers as $key => $value) {
                 $response->headers->set($key, $value);
             }
             $response->setContent($data->getContent());
+            $response->setStatusCode($data->getStatusCode());
         } else if ($data instanceof View) {
             $response->setContent(strval($data));
+            $response->setStatusCode($status);
         } else if (is_array($data) || is_object($data)) {
             $response->headers->set('Content-Type', 'application/json');
             $response->setContent(json_encode($data));
+            $response->setStatusCode($status);
         } else {
             $response->setContent($data);
+            $response->setStatusCode($status);
         }
-
         return $response;
     }
 
@@ -410,7 +412,6 @@ class Application
         $middlewareList = $route->getMiddleware();
         $request = $this->container->get('request');
         $result = $this->filterMiddleware($request, $middlewareList);
-
         if (!is_null($result)) {
             return $this->makeResponse($result);
         }
