@@ -343,16 +343,15 @@ class Application
     protected function makeResponse($data, $status = 200)
     {
         /** @var Response $response */
-        $response = $this->container->get('response');
+        if($this->container->exists('response')){
+            $response = $this->container->get('response');
+        }else{
+            $response = new Response();
+        }
         if ($status == 200) {
             $status = $response->getStatusCode();
         }
-        //$status = $response->getStatusCode() != $status;
         if ($data instanceof Response) {
-            $headers = $data->headers->all();
-            foreach ($headers as $key => $value) {
-                $response->headers->set($key, $value);
-            }
             $response->setContent($data->getContent());
             $response->setStatusCode($data->getStatusCode());
         } else if ($data instanceof View) {
