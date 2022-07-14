@@ -311,8 +311,10 @@ class Application
     protected function handleCommand()
     {
         $argv = $_SERVER['argv'];
+        $binName = $_SERVER['argv'][0];
+        $binNameLength = strlen($binName);
         foreach ($argv as $key => $arg) {
-            if ((strpos($arg, 'moon') + 4) == strlen($arg) || $arg === 'moon') {
+            if ((strpos($arg, $binName) + $binNameLength) == strlen($arg) || $arg === $binName) {
                 break;
             } else {
                 unset($argv[$key]);
@@ -365,13 +367,13 @@ class Application
      */
     protected function makeResponse($data, $status = 200)
     {
-        if($data instanceof Response){
+        if ($data instanceof Response) {
             return $data;
         }
         /** @var Response $response */
-        if($this->container->exists('response')){
+        if ($this->container->exists('response')) {
             $response = $this->container->get('response');
-        }else{
+        } else {
             $response = new Response();
         }
         if ($status == 200) {
