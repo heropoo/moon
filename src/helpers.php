@@ -56,7 +56,7 @@ if (!function_exists('root_path')) {
      */
     function root_path($path = '')
     {
-        return \App::$app->getRootPath() . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
+        return \App::$instance->getRootPath() . (strlen($path) ? DIRECTORY_SEPARATOR . $path : '');
     }
 }
 
@@ -117,7 +117,7 @@ if (!function_exists('asset')) {
          */
         $request = \App::$container->get('request');
         if ($full) {
-            return '//'. $request->getBasePath() . '/' . $path;
+            return '//' . $request->getBasePath() . '/' . $path;
         }
         return $request->getBasePath() . '/' . $path;
     }
@@ -150,8 +150,7 @@ if (!function_exists('request')) {
         if (is_null($key)) {
             return $request;
         }
-        $value = $request->get($key);
-        return is_null($value) || strlen($value) == 0 ? $default : $value;
+        return $request->get($key, $default);
     }
 }
 
@@ -170,10 +169,10 @@ if (!function_exists('url')) {
             $path = '';
         }
         /**
-         * @var \Symfony\Component\HttpFoundation\Request $request
+         * @var \Moon\Request\Request $request
          */
         $request = \App::$container->get('request');
-        return $request->getSchemeAndHttpHost() . $request->getBasePath() . '/' . $path;
+        return $request->getBasePath() . '/' . $path;
     }
 }
 
