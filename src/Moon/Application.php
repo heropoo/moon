@@ -2,8 +2,6 @@
 
 namespace Moon;
 
-use Dotenv\Dotenv;
-use Dotenv\Exception\ExceptionInterface;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Moon\Config\Config;
@@ -16,10 +14,6 @@ use Moon\Session\Session;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Moon\Request\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Whoops\Handler\JsonResponseHandler;
-use Whoops\Handler\PlainTextHandler;
-use Whoops\Handler\PrettyPageHandler;
-use Whoops\Run;
 use Swoole\Http\Request as SwooleHttpRequest;
 use Swoole\Http\Response as SwooleHttpResponse;
 
@@ -85,37 +79,66 @@ class Application
      */
     protected function handleError()
     {
-        $logger = $this->container->get('logger');
-
-        $whoops = new Run();
-
-        if (is_cli()) {
-            $whoops->pushHandler(new PlainTextHandler());
-        } else {
-            if ($this->debug) {
-                if (isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && strtolower($_SERVER["HTTP_X_REQUESTED_WITH"] == 'xmlhttprequest')) {
-                    $whoops->pushHandler(new JsonResponseHandler());
-                } else {
-                    $handler = new PrettyPageHandler();
-                    $handler->setPageTitle('Moon App Error');
-                    $whoops->pushHandler($handler);
+        set_error_handler(
+            function ($level, $error, $file, $line) {
+                if (0 === error_reporting()) {
+                    return false;
                 }
-            }
-        }
+                throw new \ErrorException($error, -1, $level, $file, $line);
+            },
+            E_ALL
+        );
 
-        $handler = new PlainTextHandler($logger);
-        $handler->loggerOnly(true);
-        $whoops->pushHandler($handler);
-        $whoops->register();
+        register_shutdown_function(function () {
+            $error = error_get_last();
+            if ($error) {
+                throw new \ErrorException($error['message'], -1, $error['type'], $error['file'], $error['line']);
+            }
+        });
+
+        $debug = $this->debug;
+        set_exception_handler(function ($exception) use ($debug) {
+            /** @var \Exception $exception */
+            if ($debug) {
+                echo "<pre>" . $exception->__toString();
+            }
+            /** @var Logger $logger */
+            $logger = $this->container->get('logger');
+            $logger->error($exception->__toString());
+            http_response_code(500);
+        });
+
+//        $logger = $this->container->get('logger');
+//
+//        $whoops = new Run();
+//
+//        if (is_cli()) {
+//            $whoops->pushHandler(new PlainTextHandler());
+//        } else {
+//            if ($this->debug) {
+//                if (isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && strtolower($_SERVER["HTTP_X_REQUESTED_WITH"] == 'xmlhttprequest')) {
+//                    $whoops->pushHandler(new JsonResponseHandler());
+//                } else {
+//                    $handler = new PrettyPageHandler();
+//                    $handler->setPageTitle('Moon App Error');
+//                    $whoops->pushHandler($handler);
+//                }
+//            }
+//        }
+//
+//        $handler = new PlainTextHandler($logger);
+//        $handler->loggerOnly(true);
+//        $whoops->pushHandler($handler);
+//        $whoops->register();
     }
 
     protected function init()
     {
-        try {
-            (new Dotenv($this->rootPath))->load();
-        } catch (ExceptionInterface $e) {
-            trigger_error($e->getMessage(), E_USER_ERROR);
-        }
+//        try {
+//            (new Dotenv($this->rootPath))->load();
+//        } catch (ExceptionInterface $e) {
+//            trigger_error($e->getMessage(), E_USER_ERROR);
+//        }
 
         $config = new Config($this->configPath);
         $this->container->add('config', $config);
@@ -342,6 +365,9 @@ class Application
      */
     protected function makeResponse($data, $status = 200)
     {
+        if($data instanceof Response){
+            return $data;
+        }
         /** @var Response $response */
         if($this->container->exists('response')){
             $response = $this->container->get('response');
@@ -351,10 +377,7 @@ class Application
         if ($status == 200) {
             $status = $response->getStatusCode();
         }
-        if ($data instanceof Response) {
-            $response->setContent($data->getContent());
-            $response->setStatusCode($data->getStatusCode());
-        } else if ($data instanceof View) {
+        if ($data instanceof View) {
             $response->setContent(strval($data));
             $response->setStatusCode($status);
         } else if (is_array($data) || is_object($data)) {
