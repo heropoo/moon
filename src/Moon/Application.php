@@ -134,11 +134,11 @@ class Application
 
     protected function init()
     {
-//        try {
-//            (new Dotenv($this->rootPath))->load();
-//        } catch (ExceptionInterface $e) {
-//            trigger_error($e->getMessage(), E_USER_ERROR);
-//        }
+        try {
+            (new Dotenv($this->rootPath))->load();
+        } catch (ExceptionInterface $e) {
+            trigger_error($e->getMessage(), E_USER_ERROR);
+        }
 
         $config = new Config($this->configPath);
         $this->container->add('config', $config);

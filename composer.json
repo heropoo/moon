@@ -20,7 +20,8 @@
         "heropoo/request": "*",
         "heropoo/session": "*",
         "monolog/monolog": "^1.0",
-        "symfony/http-foundation": "^4.3"
+        "symfony/http-foundation": "^4.3",
+        "vlucas/phpdotenv": "^2.5"
     },
     "autoload":{
         "psr-4":{
